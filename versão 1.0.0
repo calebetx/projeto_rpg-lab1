@@ -1,0 +1,106 @@
+package projeto1lab;
+import java.util.Random;
+import java.util.Scanner;
+
+public class Project {
+	static Scanner leitor = new Scanner(System.in);
+	
+	static int userAtack() {
+		System.out.println("Choice your attack!");
+		System.out.println("(1) Punch");
+		System.out.println("(2) Especial");
+		return leitor.nextInt();
+	}
+	
+	static int computerAtack() {
+		Random gerador = new Random();
+		return gerador.nextInt(3)+1;
+	}
+	
+	static void printStatus(int userHp, int computerHp, int especialCount){
+		System.out.println("=================");
+		System.out.println(" - User HP: " + userHp);
+		System.out.println(" - Computer Hp: " + computerHp);
+		System.out.println(" - Especial Count: " + especialCount);
+		System.out.println("=================");
+	}
+	
+	public void battle() {
+		int userHp = 20;
+		int computerHp;
+		int especialCount = 3;
+		int atackChoice;
+		int i = 1;
+		
+		while(userHp >0) {
+			
+			computerHp = 9 + i;
+			System.out.println("-=-=-=-=-=-=-=-=-=-");
+			System.out.println("ENEMY " + i + " APPEARS!");
+			System.out.println("-=-=-=-=-=-=-=-=-=-\n");
+			
+			while(userHp > 0 && computerHp > 0) {
+				printStatus(userHp, computerHp, especialCount);
+				atackChoice = userAtack();
+				switch(atackChoice) {
+					case 1:
+						System.out.println("User's aply a punch!");
+						computerHp -= 3;
+						break;
+					case 2:
+						if (especialCount > 0) {
+							System.out.println("User's aply a Especial Attack!");
+							computerHp -= 6;
+							especialCount--;
+						}
+						else {
+							System.out.println("Especial Attack is over!");
+						}
+						break;
+					default:
+						System.out.println("Invalid option.");
+						break;
+				}
+				if(computerHp > 0) {
+					atackChoice = computerAtack();
+					switch(atackChoice) {
+						case 1:
+							System.out.println("Enemy aply a punch!");
+							userHp -= 2 + (int)(i/5);
+							break;
+						case 2:
+							System.out.println("Enemey aply a kick!");
+							userHp -= 3 + (int)(i/5);
+							break;
+						case 3:
+							System.out.println("Enemey aply a Especial Atack!");
+							userHp -= 6 + (int)(i/10);
+							break;
+					}
+				}
+				else {
+					System.out.println("Enemy " + i + " defeat!");
+					userHp += 5 + (int)(i/3);
+				}
+			}
+			i++;
+		}
+	}
+	
+	public static void main(String[] args) {
+		Project projeto = new Project();
+		Scanner leitor = new Scanner(System.in);
+		int continua = 1;
+		while(continua == 1) {
+			
+			projeto.battle();
+			
+			System.out.println("Fim de jogo. Deseja continuar? (1) Sim (2) Não");
+			continua = leitor.nextInt();
+		}
+
+	}
+	
+	
+
+}

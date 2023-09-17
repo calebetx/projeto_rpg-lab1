@@ -1,144 +1,138 @@
 package main;
 
-import java.util.Random;
-import java.util.Scanner;
-import entities.Player;
+import java.awt.Graphics;
+
+import gamestates.Gamestate;
+import gamestates.Menu;
+import gamestates.Playing;
 
 
-public class Game {
-	
-	public static Scanner leitor = new Scanner(System.in);
+// Responsável pelo código do jogo
+public class Game implements Runnable {
 	
 	private GameWindow gameWindow;
 	private GamePanel gamePanel;
+	private Thread gameThread;
+	private final int FPS_SET = 120;
+	private final int UPS_SET =  200;
+	
+	private Playing playing;
+	private Menu menu;
+	
+	public final static int TILES_DEFAULT_SIZE = 32;
+	public final static float SCALE = 2f;
+	public final static int TILES_IN_WIDTH = 26;
+	public final static int TILES_IN_HEIGHT = 14;
+	public final static int TILES_SIZE = (int) (TILES_DEFAULT_SIZE * SCALE);
+	public final static int GAME_WIDTH = TILES_SIZE * TILES_IN_WIDTH;
+	public final static int GAME_HEIGHT = TILES_SIZE * TILES_IN_HEIGHT;
 	
 	public Game() {
-		gamePanel = new GamePanel();
+		initClasses();
+		gamePanel = new GamePanel(this);
 		gameWindow = new GameWindow(gamePanel);
-		gamePanel.requestFocus(); // Define que a entrada deve ser dada no JPanel(Ao invés de colocar o input no console, coloca na interface)
+		gamePanel.requestFocus(); // Define que a entrada deve ser dada no JPanel(Ao invés de colocar o input no console, coloca no jogo)
 		
-		/*int continua = 1;
-		while(continua == 1) {
-			
-			Player player = initialDisplay();
-			battle(player);
-			
-			System.out.println("Fim de jogo. Deseja continuar? (1) Sim (2) Não");
-			continua = leitor.nextInt();
-			
-		}*/
+		startGameLoop();
 	}
 	
-	// Computer Attack
-	public static int computerAttack() {
-		Random gerador = new Random();
-		return gerador.nextInt(3)+1;
+	private void initClasses() {
+		
+		menu = new Menu(this);
+		playing = new Playing(this);
+		
 	}
-	
-	// Display
-	public static void printStatus(int userHp, int computerHp, int especialCount){
-		System.out.println("=================");
-		System.out.println(" - User HP: " + userHp);
-		System.out.println(" - Computer Hp: " + computerHp);
-		System.out.println(" - Especial Count: " + especialCount);
-		System.out.println("=================");
-	}
-	
-	public void battle(Player player) {
-		
-		int userHp = player.getStatusInt("userHp");
-		int especialCount = player.getStatusInt("especialCount");
-		
-		int atackChoice;
-		int computerHp;
-		int i = 1;
-		
-		while(userHp >0) {
-			
-			computerHp = 9 + i;
-			System.out.println("-=-=-=-=-=-=-=-=-=-");
-			System.out.println("ENEMY " + i + " APPEARS!");
-			System.out.println("-=-=-=-=-=-=-=-=-=-\n");
-			
-			while(userHp > 0 && computerHp > 0) {
-				printStatus(userHp, computerHp, especialCount);
-				atackChoice = Player.userAtack();
-				switch(atackChoice) {
-					case 1:
-						System.out.println("User's aply a punch!");
-						computerHp -= 3;
-						break;
-					case 2:
-						if (especialCount > 0) {
-							System.out.println("User's aply a Especial Attack!");
-							computerHp -= 6;
-							especialCount--;
-						}
-						else {
-							System.out.println("Especial Attack is over!");
-						}
-						break;
-					default:
-						System.out.println("Invalid option.");
-						break;
-				}
-				if(computerHp > 0) {
-					atackChoice = computerAttack();
-					switch(atackChoice) {
-						case 1:
-							System.out.println("Enemy aply a punch!");
-							userHp -= 2 + (int)(i/5);
-							break;
-						case 2:
-							System.out.println("Enemey aply a kick!");
-							userHp -= 3 + (int)(i/5);
-							break;
-						case 3:
-							System.out.println("Enemey aply a Especial Atack!");
-							userHp -= 6 + (int)(i/10);
-							break;
-					}
-				}
-				else {
-					System.out.println("Enemy " + i + " defeat!");
-					userHp += 5 + (int)(i/3);
-				}
-			}
-			i++;
-		}
-	}
-	
-	public static Player initialDisplay() {
-		
-		System.out.println("-=-=-=-=-=-=-=-=-=-");
-		System.out.println("\nWELCOME TO THE GUNGEON\n");
-		System.out.println("-=-=-=-=-=-=-=-=-=-\n");
-		
-		System.out.println("ARE YOU A NEW PLAYER? (y/n)");
-		char newGame = leitor.next().charAt(0);
-		if(newGame == 'y') {
-			Player player = new Player("null", 1, 1, "null");
-			
-			System.out.printf("What's your name?\n");
-			player.setStatus("name");
-			System.out.printf("What's your class?\n");
-			player.setStatus("grade");
-			
-			player.setClass();
-			
-			// System.out.printf("%s %d %d %s\n", player.getStatusStr("name"), player.getStatusInt("userHp"), player.getStatusInt("especialCount"), player.getStatusStr("grade"));
-			// char newG2ame = leitor.next().charAt(0); // Essa linha é só pra pausar
-			
-			
-			return player;
-		}
-		else if(newGame == 'n') {
-			return null;
-		}
-		else {
-			return null;
-		}
-	}
-	
 
+	private void startGameLoop() {
+		gameThread = new Thread(this);
+		gameThread.start();
+	}
+
+	public void update() {
+		
+		switch(Gamestate.state) {
+		case MENU:
+			menu.update();
+			break;
+		case PLAYING:
+			playing.update();
+			break;
+		default:
+			break;
+		
+		}
+	}
+	
+	public void render(Graphics g) {
+		
+		switch(Gamestate.state) {
+		case MENU:
+			menu.draw(g);
+			break;
+		case PLAYING:
+			playing.draw(g);
+			break;
+		default:
+			break;
+		
+		}
+	}
+	
+	@Override
+	public void run() {
+		
+		double timePerFrame = 1000000000.0 / FPS_SET;
+		double timePerUpdate = 1000000000.0 / UPS_SET;
+		
+		long previousTime = System.nanoTime();
+		
+		int frames = 0;
+		int updates = 0;
+		long lastCheck = System.currentTimeMillis();
+		
+		double deltaU = 0;
+		double deltaF = 0;
+		
+		while(true) {
+			
+			long currentTime = System.nanoTime();
+			
+			deltaU += (currentTime - previousTime) / timePerUpdate;
+			deltaF += (currentTime - previousTime) / timePerFrame;
+			previousTime = currentTime;
+			if(deltaU >= 1) {
+				update();
+				updates++;
+				deltaU--;
+			}
+			
+			if(deltaF >= 1) {
+				gamePanel.repaint(); // Desenha novamente o vídeo após alteração / Alteração feita somente após 120 frames(Tratamento em nanoseconds)
+				frames++;
+				deltaF--;
+			}
+			
+			if(System.currentTimeMillis() - lastCheck >= 1000) {
+				lastCheck = System.currentTimeMillis();
+				System.out.println("FPS" + frames + "| UPS: " + updates);
+				frames = 0;
+				updates = 0;
+			}
+		}
+		
+	}
+	
+	public void windowFocusLost() {
+		if(Gamestate.state == Gamestate.PLAYING)
+			playing.getPlayer().resetDirBooleans();
+	}
+	
+	public Menu getMenu() {
+		return menu;
+	}
+	
+	public Playing getPlaying() {
+		return playing;
+	}
+	
 }
